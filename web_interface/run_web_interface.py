@@ -6,12 +6,24 @@ WeakSegFormer Web Interface Launcher
 This script launches the web interface with automatic setup and validation.
 """
 
+import streamlit as st
+import gdown
 import os
 import sys
 import subprocess
 import json
 import torch
 from pathlib import Path
+
+MODEL_PATH = "advanced_results/best_model.pth"
+FILE_ID = "1QAB8FkONBDEW6j4AaHlWhXi15RqxQChB"
+
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("Đang tải model từ Google Drive (chỉ lần đầu tiên)..."):
+            url = f"https://drive.google.com/uc?id={FILE_ID}"
+            gdown.download(url, MODEL_PATH, quiet=False)
+        st.success("Model loaded successfully!")
 
 def check_dependencies():
     """Check if all required dependencies are installed"""
@@ -139,6 +151,8 @@ def main():
     # Run checks
     print("\n🔍 Running system checks...")
     
+    download_model()
+
     check1 = check_dependencies()
     check2 = check_model_files()
     check3 = check_gpu()
