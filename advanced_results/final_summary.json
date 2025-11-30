@@ -1,0 +1,10 @@
+{
+  "best_miou": 0.7697492421438832,
+  "best_mdice": 0.6814130199810242,
+  "best_mhd95": 18.348490813668008,
+  "best_val_loss": 0.3631324279970064,
+  "best_epoch": 93,
+  "total_epochs": 100,
+  "target_miou": 0.8065,
+  "achieved_target": false
+}

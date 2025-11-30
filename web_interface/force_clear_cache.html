@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Clear Cache - Enhanced WeakTR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .button {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #2980b9;
+        }
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Force Clear Cache - Enhanced WeakTR</h1>
+        <p>This page will help you clear browser cache and force reload the updated web interface.</p>
+        
+        <div class="step">
+            <h3>Step 1: Clear Browser Cache</h3>
+            <p>Press the button below to clear cache and reload:</p>
+            <button class="button" onclick="clearCacheAndReload()">Clear Cache & Reload</button>
+            <div id="cacheStatus"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Manual Cache Clear (if needed)</h3>
+            <p>If the button above doesn't work, try these manual methods:</p>
+            
+            <h4>Chrome/Edge:</h4>
+            <div class="code">Ctrl + Shift + R (Hard Refresh)<br>or<br>Ctrl + F5</div>
+            
+            <h4>Firefox:</h4>
+            <div class="code">Ctrl + Shift + R</div>
+            
+            <h4>Safari:</h4>
+            <div class="code">Cmd + Shift + R</div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Developer Tools Method</h3>
+            <p>For advanced users:</p>
+            <ol>
+                <li>Open Developer Tools (F12)</li>
+                <li>Go to Network tab</li>
+                <li>Check "Disable cache" checkbox</li>
+                <li>Refresh the page</li>
+            </ol>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Test Color Fix</h3>
+            <p>After clearing cache, go to the main interface and test:</p>
+            <button class="button" onclick="goToMainInterface()">Go to Main Interface</button>
+            <button class="button" onclick="testColorConsistency()">Test Color Consistency</button>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Expected Results After Fix</h3>
+            <p>You should see:</p>
+            <ul>
+                <li><strong>Legend colors</strong> match the segmentation colors</li>
+                <li><strong>Tumor Segmentation</strong>: Blue region (not black)</li>
+                <li><strong>Background Segmentation</strong>: Black region (not white)</li>
+                <li><strong>Necrotic Segmentation</strong>: Red region (not white)</li>
+                <li><strong>Edema Segmentation</strong>: Green region ✅</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function clearCacheAndReload() {
+            const status = document.getElementById('cacheStatus');
+            status.innerHTML = '<p class="warning">Clearing cache and reloading...</p>';
+            
+            // Clear various caches
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            
+            // Clear localStorage and sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Force reload with cache bypass
+            setTimeout(() => {
+                window.location.href = 'http://localhost:5000?t=' + Date.now();
+            }, 1000);
+        }
+        
+        function goToMainInterface() {
+            window.open('http://localhost:5000?t=' + Date.now(), '_blank');
+        }
+        
+        function testColorConsistency() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<p class="warning">Testing color consistency...</p>';
+            
+            // Test if server is running with updated code
+            fetch('http://localhost:5000/health')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'healthy') {
+                        results.innerHTML = '<p class="success">✅ Server is running with updated code!</p>';
+                        
+                        // Test upload endpoint
+                        return fetch('http://localhost:5000/debug/model');
+                    } else {
+                        throw new Error('Server not healthy');
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.test_inference && data.test_inference.status === '✅ Success') {
+                        results.innerHTML += '<p class="success">✅ Color consistency fix is active!</p>';
+                        results.innerHTML += '<p>Now try uploading an MRI image to see the corrected colors.</p>';
+                    } else {
+                        results.innerHTML += '<p class="warning">⚠️ Server is running but color fix may not be active.</p>';
+                    }
+                })
+                .catch(error => {
+                    results.innerHTML = '<p style="color: #e74c3c;">❌ Error: ' + error.message + '</p>';
+                });
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testColorConsistency, 1000);
+        });
+    </script>
+</body>
+</html>

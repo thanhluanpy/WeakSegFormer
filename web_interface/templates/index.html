@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeakSegFormer - Brain Tumor Segmentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --light-bg: #ecf0f1;
+            --dark-bg: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 1400px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            padding: 40px;
+            background: var(--light-bg);
+        }
+
+        .upload-area {
+            border: 3px dashed var(--secondary-color);
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--success-color);
+            background: #d4edda;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .results-section {
+            padding: 40px;
+            display: none;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .result-card h3 {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .result-content {
+            padding: 30px;
+        }
+
+        .image-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .result-image:hover {
+            transform: scale(1.02);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid var(--secondary-color);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .metric-label {
+            color: #6c757d;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+
+        .class-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+        }
+
+        .footer {
+            background: var(--dark-bg);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-brain"></i> WeakSegFormer</h1>
+            <p>Brain Tumor Segmentation</p>
+            <div class="class-legend" id="classLegend">
+                <!-- Dynamic legend will be populated here based on actual detected classes -->
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h3>Upload MRI Image</h3>
+                        <p class="text-muted">Drag and drop your MRI image here or click to browse</p>
+                        <p class="text-muted"><small>Supported formats: JPG, PNG, JPEG (Max: 16MB)</small></p>
+                        <input type="file" id="fileInput" class="file-input" accept="image/*">
+                        <div class="mt-3">
+                            <button class="btn btn-primary me-2" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-folder-open"></i> Choose File
+                            </button>
+                            <button class="btn btn-info" onclick="debugModel()">
+                                <i class="fas fa-bug"></i> Debug Model
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Section -->
+        <div class="loading" id="loadingSection">
+            <div class="spinner"></div>
+            <h4>Processing MRI Image...</h4>
+            <p class="text-muted">Please wait while our AI model analyzes your image</p>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <div class="row">
+                <div class="col-12">
+                    <div class="result-card">
+                        <h3><i class="fas fa-images"></i> Segmentation Results with Visual Line Improvements</h3>
+                        <div class="result-content">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="image-container">
+                                        <h5>Original MRI Image</h5>
+                                        <img id="originalImage" class="result-image" alt="Original MRI">
+                                        <p class="text-muted small">High-resolution MRI scan</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="image-container">
+                                        <h5>Segmentation Map</h5>
+                                        <img id="segmentationImage" class="result-image" alt="Segmentation">
+                                        <p class="text-muted small">With improved contour lines and visual definition</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="image-container">
+                                        <h5>Edge Overlay</h5>
+                                        <img id="overlayImage" class="result-image" alt="Edge Overlay">
+                                        <p class="text-muted small">Combined with edge detection for better boundaries</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Individual Class Visualizations -->
+                            <div class="row mt-4" id="individualClassSection" style="display: none;">
+                                <div class="col-12">
+                                    <h5><i class="fas fa-layer-group"></i> Individual Class Segmentation Maps</h5>
+                                    <p class="text-muted">WeakSegFormer visualizations for each detected class with improved contour lines</p>
+                                    <div class="row" id="individualClassMaps">
+                                        <!-- Individual class maps will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- All Model Outputs -->
+                            <div class="row mt-4" id="allOutputsSection" style="display: none;">
+                                <div class="col-12">
+                                    <h5><i class="fas fa-cogs"></i> All Model Outputs</h5>
+                                    <p class="text-muted">Raw outputs from different layers of the model for comparison</p>
+                                    <div class="row" id="allOutputImages">
+                                        <!-- All output images will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- WeakSegFormer Visualization Controls -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                        <button class="btn btn-outline-primary" onclick="toggleIndividualClasses()">
+                                            <i class="fas fa-eye"></i> Toggle Individual Classes
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="toggleAllOutputs()">
+                                            <i class="fas fa-cogs"></i> Toggle All Outputs
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="downloadVisualization()">
+                                            <i class="fas fa-download"></i> Download WeakSegFormer Visualization
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="downloadClassMaps()">
+                                            <i class="fas fa-layer-group"></i> Download Class Maps
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="downloadReport()">
+                                            <i class="fas fa-file-alt"></i> Download Analysis Report
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="result-card">
+                        <h3><i class="fas fa-chart-bar"></i> Analysis Metrics</h3>
+                        <div class="result-content">
+                            <div class="metrics-grid" id="metricsGrid">
+                                <!-- Metrics will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2025 WeakSegFormer - Brain Tumor Segmentation System</p>
+            <p><small>Powered by Vision Transformer with WeakSegFormer Segmentation Head</small></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentResults = null;
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loadingSection = document.getElementById('loadingSection');
+        const resultsSection = document.getElementById('resultsSection');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                showAlert('Please select a valid image file.', 'danger');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showAlert('File size must be less than 16MB.', 'danger');
+                return;
+            }
+
+            // Upload file
+            uploadFile(file);
+        }
+
+        function uploadFile(file) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Show loading
+                if (loadingSection) loadingSection.style.display = 'block';
+                if (resultsSection) resultsSection.style.display = 'none';
+
+                console.log('🔄 Uploading file:', file.name);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    console.log('📡 Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📊 Received data:', data);
+                    
+                    if (loadingSection) loadingSection.style.display = 'none';
+                    
+                    if (data.error) {
+                        showAlert(`Server error: ${data.error}`, 'danger');
+                        console.error('❌ Server error:', data.error);
+                    } else {
+                        currentResults = data;
+                        displayResults(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Upload error:', error);
+                    
+                    if (loadingSection) loadingSection.style.display = 'none';
+                    
+                    let errorMessage = 'An error occurred during processing.';
+                    if (error.message.includes('HTTP error')) {
+                        errorMessage = 'Server error. Please try again.';
+                    } else if (error.message.includes('Failed to fetch')) {
+                        errorMessage = 'Connection error. Please check server status.';
+                    }
+                    
+                    showAlert(errorMessage, 'danger');
+                });
+            } catch (error) {
+                console.error('❌ Critical error in uploadFile:', error);
+                showAlert('Critical error: ' + error.message, 'danger');
+                
+                if (loadingSection) loadingSection.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            try {
+                console.log('🔄 Displaying WeakSegFormer results with data:', data);
+                
+                // Validate required data
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid data received');
+                }
+                
+                // Display dynamic legend based on detected classes
+                displayDynamicLegend(data);
+                
+                // Display main images
+                if (data.original_image) {
+                    const originalImg = document.getElementById('originalImage');
+                    if (originalImg) {
+                        originalImg.src = 'data:image/png;base64,' + data.original_image;
+                    }
+                }
+                
+                if (data.segmentation_map) {
+                    const segImg = document.getElementById('segmentationImage');
+                    if (segImg) {
+                        segImg.src = 'data:image/png;base64,' + data.segmentation_map;
+                    }
+                }
+                
+                if (data.overlay) {
+                    const overlayImg = document.getElementById('overlayImage');
+                    if (overlayImg) {
+                        overlayImg.src = 'data:image/png;base64,' + data.overlay;
+                    }
+                }
+
+                // Display individual class maps
+                displayIndividualClassMaps(data);
+                
+                // Display all output images
+                displayAllOutputImages(data);
+
+                // Display metrics
+                const metricsGrid = document.getElementById('metricsGrid');
+                if (metricsGrid) {
+                    metricsGrid.innerHTML = '';
+
+                    const classNames = data.class_names || [];
+                    if (classNames.length > 0) {
+                        classNames.forEach((className, index) => {
+                            const percentage = data.metrics[`${className}_percentage`] || 0;
+                            const confidence = data.metrics[`${className}_confidence`] || 0;
+
+                            const metricCard = document.createElement('div');
+                            metricCard.className = 'metric-card';
+                            metricCard.innerHTML = `
+                                <div class="metric-value">${percentage}%</div>
+                                <div class="metric-label">${className} Area</div>
+                                <small class="text-muted">Confidence: ${confidence}%</small>
+                            `;
+                            metricsGrid.appendChild(metricCard);
+                        });
+                    } else {
+                        metricsGrid.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-info text-center">
+                                    <i class="fas fa-info-circle"></i>
+                                    No class metrics available
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Show results
+                if (resultsSection) {
+                    resultsSection.style.display = 'block';
+                    resultsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+                
+                console.log('✅ WeakSegFormer results displayed successfully');
+            } catch (error) {
+                console.error('❌ Error in displayResults:', error);
+                showAlert('Error displaying results: ' + error.message, 'warning');
+                
+                // Show error in results section
+                if (resultsSection) {
+                    resultsSection.style.display = 'block';
+                    resultsSection.innerHTML = `
+                        <div class="alert alert-danger text-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h4>Error Displaying Results</h4>
+                            <p>${error.message}</p>
+                            <button class="btn btn-primary" onclick="location.reload()">
+                                <i class="fas fa-refresh"></i> Reload Page
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function displayDynamicLegend(data) {
+            try {
+                const classLegend = document.getElementById('classLegend');
+                if (!classLegend) return;
+
+                // Define the complete color mapping for all possible classes
+                const completeClassMapping = {
+                    'Background': '#000000',
+                    'Necrotic': '#8B0000', 
+                    'Edema': '#228B22',
+                    'Tumor': '#4169E1'
+                };
+
+                // Get detected classes from the data
+                const detectedClassNames = data.class_names || [];
+                const detectedClassColors = data.class_colors || [];
+
+                console.log('🔄 Displaying dynamic legend for classes:', detectedClassNames);
+                console.log('🔄 With colors:', detectedClassColors);
+
+                // Clear existing legend
+                classLegend.innerHTML = '';
+
+                if (detectedClassNames.length > 0) {
+                    // Display only the detected classes in the order they appear
+                    detectedClassNames.forEach((className, index) => {
+                        const color = detectedClassColors[index] || completeClassMapping[className] || '#808080';
+                        
+                        const legendItem = document.createElement('div');
+                        legendItem.className = 'legend-item';
+                        legendItem.innerHTML = `
+                            <div class="legend-color" style="background: ${color};"></div>
+                            <span>${className}</span>
+                        `;
+                        classLegend.appendChild(legendItem);
+                    });
+                } else {
+                    // Fallback: show all possible classes if no data
+                    Object.entries(completeClassMapping).forEach(([className, color]) => {
+                        const legendItem = document.createElement('div');
+                        legendItem.className = 'legend-item';
+                        legendItem.innerHTML = `
+                            <div class="legend-color" style="background: ${color};"></div>
+                            <span>${className}</span>
+                        `;
+                        classLegend.appendChild(legendItem);
+                    });
+                }
+
+                console.log('✅ Dynamic legend displayed successfully');
+            } catch (error) {
+                console.error('❌ Error displaying dynamic legend:', error);
+            }
+        }
+
+        function displayIndividualClassMaps(data) {
+            try {
+                const individualClassMaps = data.individual_class_maps || {};
+                const individualClassMapsContainer = document.getElementById('individualClassMaps');
+                
+                if (individualClassMapsContainer) {
+                    individualClassMapsContainer.innerHTML = '';
+                    
+                    if (Object.keys(individualClassMaps).length > 0) {
+                        Object.entries(individualClassMaps).forEach(([className, classMapB64]) => {
+                            const classMapDiv = document.createElement('div');
+                            classMapDiv.className = 'col-md-3 col-sm-6 mb-3';
+                            classMapDiv.innerHTML = `
+                                <div class="image-container">
+                                    <h6>${className} Segmentation</h6>
+                                    <img src="data:image/png;base64,${classMapB64}" 
+                                         class="result-image" 
+                                         alt="${className} Segmentation"
+                                         style="max-height: 200px; object-fit: contain;">
+                                    <p class="text-muted small">WeakSegFormer with contour lines</p>
+                                </div>
+                            `;
+                            individualClassMapsContainer.appendChild(classMapDiv);
+                        });
+                    } else {
+                        individualClassMapsContainer.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-info text-center">
+                                    <i class="fas fa-info-circle"></i>
+                                    No individual class maps available
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error displaying individual class maps:', error);
+            }
+        }
+
+        function displayAllOutputImages(data) {
+            try {
+                const allOutputImages = data.all_output_images || {};
+                const allOutputImagesContainer = document.getElementById('allOutputImages');
+                
+                if (allOutputImagesContainer) {
+                    allOutputImagesContainer.innerHTML = '';
+                    
+                    if (Object.keys(allOutputImages).length > 0) {
+                        const outputNames = ['final_output', 'deep_sup1', 'deep_sup2', 'original_output', 'combined_output'];
+                        const outputTitles = ['Final Output', 'Deep Supervision 1', 'Deep Supervision 2', 'Original Output', 'Combined Output'];
+                        
+                        outputNames.forEach((outputName, index) => {
+                            if (allOutputImages[outputName]) {
+                                const outputDiv = document.createElement('div');
+                                outputDiv.className = 'col-md-3 col-sm-6 mb-3';
+                                
+                                // Special styling for combined output
+                                const isCombined = outputName === 'combined_output';
+                                const titleColor = isCombined ? 'color: red; font-weight: bold;' : '';
+                                const borderStyle = isCombined ? 'border: 3px solid red;' : '';
+                                
+                                outputDiv.innerHTML = `
+                                    <div class="image-container" style="${borderStyle}">
+                                        <h6 style="${titleColor}">${outputTitles[index]}</h6>
+                                        <img src="data:image/png;base64,${allOutputImages[outputName]}" 
+                                             class="result-image" 
+                                             alt="${outputTitles[index]}"
+                                             style="max-height: 200px; object-fit: contain;">
+                                        <p class="text-muted small">${outputName}${isCombined ? ' (25% each output)' : ''}</p>
+                                    </div>
+                                `;
+                                allOutputImagesContainer.appendChild(outputDiv);
+                            }
+                        });
+                    } else {
+                        allOutputImagesContainer.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-info text-center">
+                                    <i class="fas fa-info-circle"></i>
+                                    No model outputs available
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error displaying all output images:', error);
+            }
+        }
+
+        function toggleIndividualClasses() {
+            const individualClassSection = document.getElementById('individualClassSection');
+            if (individualClassSection) {
+                if (individualClassSection.style.display === 'none') {
+                    individualClassSection.style.display = 'block';
+                    individualClassSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    individualClassSection.style.display = 'none';
+                }
+            }
+        }
+
+        function toggleAllOutputs() {
+            const allOutputsSection = document.getElementById('allOutputsSection');
+            if (allOutputsSection) {
+                if (allOutputsSection.style.display === 'none') {
+                    allOutputsSection.style.display = 'block';
+                    allOutputsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    allOutputsSection.style.display = 'none';
+                }
+            }
+        }
+
+        function downloadVisualization() {
+            if (currentResults && currentResults.filename) {
+                const link = document.createElement('a');
+                link.href = `/download/visualization/${currentResults.filename}`;
+                link.download = `${currentResults.filename}_WeakSegFormer_visualization.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showAlert('WeakSegFormer visualization download started!', 'success');
+            } else {
+                showAlert('No visualization available for download', 'warning');
+            }
+        }
+
+        function downloadClassMaps() {
+            if (currentResults && currentResults.filename) {
+                const link = document.createElement('a');
+                link.href = `/download/class_maps/${currentResults.filename}`;
+                link.download = `${currentResults.filename}_class_maps.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showAlert('Class maps download started!', 'success');
+            } else {
+                showAlert('No class maps available for download', 'warning');
+            }
+        }
+
+        function downloadReport() {
+            if (currentResults && currentResults.filename) {
+                const link = document.createElement('a');
+                link.href = `/download/report/${currentResults.filename}`;
+                link.download = `${currentResults.filename}_analysis_report.html`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showAlert('Analysis report download started!', 'success');
+            } else {
+                showAlert('No report available for download', 'warning');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const uploadSection = document.querySelector('.upload-section');
+            if (uploadSection) {
+                uploadSection.insertBefore(alertDiv, uploadSection.firstChild);
+            }
+            
+            // Auto-dismiss success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        function debugModel() {
+            console.log('🔄 Debugging model...');
+            
+            // Show loading state
+            const debugBtn = event.target;
+            const originalText = debugBtn.innerHTML;
+            debugBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            debugBtn.disabled = true;
+            
+            fetch('/debug/model')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Debug response:', data);
+                    
+                    if (data.error) {
+                        showAlert(`Debug failed: ${data.error}`, 'danger');
+                        return;
+                    }
+                    
+                    // Create detailed debug report
+                    let debugReport = '🔍 Model Debug Report\n\n';
+                    
+                    // Model status
+                    debugReport += `📊 Model Status:\n`;
+                    debugReport += `- Loaded: ${data.model_status.loaded ? '✅ Yes' : '❌ No'}\n`;
+                    debugReport += `- Type: ${data.model_status.type}\n`;
+                    debugReport += `- Device: ${data.model_status.device}\n\n`;
+                    
+                    // System info
+                    debugReport += `💻 System Info:\n`;
+                    debugReport += `- PyTorch Version: ${data.system_info.pytorch_version}\n`;
+                    debugReport += `- CUDA Available: ${data.system_info.cuda_available ? '✅ Yes' : '❌ No'}\n`;
+                    if (data.system_info.cuda_available) {
+                        debugReport += `- CUDA Devices: ${data.system_info.cuda_devices}\n`;
+                    }
+                    debugReport += `- Timestamp: ${data.timestamp}\n\n`;
+                    
+                    // Test inference results
+                    if (data.test_inference) {
+                        debugReport += `🧪 Test Inference:\n`;
+                        if (data.test_inference.status === '✅ Success') {
+                            debugReport += `- Status: ${data.test_inference.status}\n`;
+                            debugReport += `- Input Shape: ${data.test_inference.input_shape}\n`;
+                            if (data.test_inference.output_type === 'tuple/list') {
+                                debugReport += `- Output Type: ${data.test_inference.output_type}\n`;
+                                debugReport += `- Output Length: ${data.test_inference.output_length}\n`;
+                                debugReport += `- Main Output Shape: ${data.test_inference.main_output_shape}\n`;
+                                debugReport += `- Output Classes: ${data.test_inference.output_classes}\n`;
+                            } else {
+                                debugReport += `- Output Type: ${data.test_inference.output_type}\n`;
+                                debugReport += `- Output Shape: ${data.test_inference.output_shape}\n`;
+                                debugReport += `- Output Classes: ${data.test_inference.output_classes}\n`;
+                            }
+                            debugReport += `- Output Range: ${data.test_inference.output_range}\n`;
+                        } else if (data.test_inference.status === '❌ Failed') {
+                            debugReport += `- Status: ${data.test_inference.status}\n`;
+                            debugReport += `- Error: ${data.test_inference.error}\n`;
+                        } else {
+                            debugReport += `- Status: ${data.test_inference.status}\n`;
+                            debugReport += `- Message: ${data.test_inference.message}\n`;
+                        }
+                        debugReport += '\n';
+                    }
+                    
+                    // Filesystem info
+                    if (data.filesystem && !data.filesystem.error) {
+                        debugReport += `📁 Filesystem:\n`;
+                        debugReport += `- Current Directory: ${data.filesystem.current_directory}\n`;
+                        debugReport += `- Parent Directory: ${data.filesystem.parent_directory}\n`;
+                        debugReport += `- Current Files: ${data.filesystem.current_files}\n`;
+                        debugReport += `- Parent Files: ${data.filesystem.parent_files}\n`;
+                    } else if (data.filesystem && data.filesystem.error) {
+                        debugReport += `📁 Filesystem:\n`;
+                        debugReport += `- Error: ${data.filesystem.error}\n`;
+                    }
+                    
+                    // Show debug report in alert
+                    showAlert(debugReport, 'info');
+                    
+                    // Also log to console
+                    console.log('Debug Report:', debugReport);
+                    
+                })
+                .catch(error => {
+                    console.error('❌ Debug failed:', error);
+                    showAlert('Debug failed. Please check server connection.', 'danger');
+                })
+                .finally(() => {
+                    // Restore button state
+                    debugBtn.innerHTML = originalText;
+                    debugBtn.disabled = false;
+                });
+        }
+
+        // Initialize default legend on page load
+        function initializeDefaultLegend() {
+            const classLegend = document.getElementById('classLegend');
+            if (!classLegend) return;
+
+            // Show all possible classes with their correct colors
+            const completeClassMapping = {
+                'Background': '#000000',
+                'Necrotic': '#8B0000', 
+                'Edema': '#228B22',
+                'Tumor': '#4169E1'
+            };
+
+            classLegend.innerHTML = '';
+            Object.entries(completeClassMapping).forEach(([className, color]) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <div class="legend-color" style="background: ${color};"></div>
+                    <span>${className}</span>
+                `;
+                classLegend.appendChild(legendItem);
+            });
+        }
+
+        // Health check on page load
+        window.addEventListener('load', () => {
+            console.log('🔄 Performing health check...');
+            
+            // Initialize default legend
+            initializeDefaultLegend();
+            
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Health check response:', data);
+                    
+                    if (data.status === 'error') {
+                        showAlert(`Health check failed: ${data.error}`, 'danger');
+                        return;
+                    }
+                    
+                    if (!data.overall_healthy) {
+                        let issues = [];
+                        
+                        if (!data.model.loaded) {
+                            issues.push('Model not loaded');
+                        }
+                        
+                        if (data.directories.upload_folder && !data.directories.upload_folder.writable) {
+                            issues.push('Upload directory not writable');
+                        }
+                        
+                        if (data.directories.results_folder && !data.directories.results_folder.writable) {
+                            issues.push('Results directory not writable');
+                        }
+                        
+                        if (data.dependencies.error) {
+                            issues.push('Dependency issues detected');
+                        }
+                        
+                        const issueText = issues.join(', ');
+                        showAlert(`System issues detected: ${issueText}`, 'warning');
+                    } else {
+                        console.log('✅ System is healthy');
+                        showAlert('✅ System is healthy and ready for processing!', 'success');
+                    }
+                    
+                    // Log detailed status
+                    if (data.model.loaded) {
+                        console.log('✅ Model loaded:', data.model.type);
+                        console.log('✅ Device:', data.model.device);
+                    } else {
+                        console.log('⚠️ Model not loaded');
+                    }
+                    
+                    console.log('📁 Directories status:', data.directories);
+                    console.log('🔧 Dependencies status:', data.dependencies);
+                    
+                })
+                .catch(error => {
+                    console.error('❌ Health check failed:', error);
+                    showAlert('Health check failed. Please check server connection.', 'danger');
+                });
+        });
+    </script>
+</body>
+</html> 
