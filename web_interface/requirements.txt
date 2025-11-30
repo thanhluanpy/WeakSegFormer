@@ -1,7 +1,7 @@
 streamlit
 Flask==2.3.3
 torch==2.5.1
-torchvision==0.15.2
+torchvision==0.21.0
 numpy==1.24.3
 opencv-python==4.8.1.78
 Pillow==10.0.1
